@@ -142,6 +142,7 @@ namespace DertInfo.Api
 
             // Runs matching. An endpoint is selected and set on the HttpContext if a match is found.
             app.UseRouting();
+            //app.UseCors("AllowAll");
             app.UseCors("AllowAll");
 
             // Middleware that run after routing occurs. Usually the following appear here:
