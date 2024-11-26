@@ -36,6 +36,7 @@ stages:
           vmImage: $(vmImageName)
         steps:
           - script: |
+              echo System.DefaultWorkingDirectory: '$(System.DefaultWorkingDirectory)'
               echo Build.SourceBranch: '$(Build.SourceBranch)'
               echo Build.Reason: '$(Build.Reason)'
               echo Build.ArtifactStagingDirectory: '$(Build.ArtifactStagingDirectory)'
@@ -59,6 +60,9 @@ stages:
               echo RateLimitRenewalSecs_Stg: '$(RateLimitRenewalSecs_Stg)'
               echo RateLimitRenewalSecs_Prod: '$(RateLimitRenewalSecs_Prod)'
             displayName: 'Output build variables'
+          - script: |
+              echo "Listing files in the artifact directory"
+              ls -R $(System.DefaultWorkingDirectory)
             
   - stage: DeployToTest
     displayName: Deploy to Test
