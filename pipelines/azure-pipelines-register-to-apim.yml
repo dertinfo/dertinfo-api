@@ -24,9 +24,9 @@ variables:
   - name: location
     value: 'uksouth'
   - name: templateFile
-    value: '**/apim/main.bicep'
+    value: './infra/bicep/apim/main.bicep'
   - name: csmParametersFile
-    value: '**/apim/main.parameters.json'
+    value: './infra/bicep/apim/main.parameters.json'
 
 stages:
   - stage: Validate
