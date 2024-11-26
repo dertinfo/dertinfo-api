@@ -18,7 +18,7 @@ pr:
 name: Register_API_To_APIM
 
 variables:
-  - group: DertInfoAPIMIntegration_VariablesGroup
+  - group: DertInfoAPI_RegisterAPIM_VariablesGroup
   - name: vmImageName
     value: 'ubuntu-latest'
   - name: location
