@@ -63,7 +63,22 @@ stages:
           - script: |
               echo "Listing files in the artifact directory"
               ls -R $(System.DefaultWorkingDirectory)
-            
+
+  - stage: Publish Artefact
+    jobs:
+      - job: Publish_Artefact
+        pool:
+          vmImage: $(vmImageName)
+        steps:
+          - script: |
+              echo "Listing files in the artifact directory"
+              ls -R $(System.DefaultWorkingDirectory)
+          - task: PublishBuildArtifacts@1
+            inputs:
+              PathtoPublish: '$(System.DefaultWorkingDirectory)/infra'
+              ArtifactName: 'drop'
+              publishLocation: 'Container'
+
   - stage: DeployToTest
     displayName: Deploy to Test
     jobs:
