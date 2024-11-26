@@ -24,9 +24,9 @@ variables:
   - name: location
     value: 'uksouth'
   - name: templateFile
-    value: '**/infra/bicep/apim/main.bicep'
+    value: '**/apim/main.bicep'
   - name: csmParametersFile
-    value: '**/infra/bicep/apim/main.parameters.json'
+    value: '**/apim/main.parameters.json'
 
 stages:
   - stage: Validate
@@ -71,6 +71,9 @@ stages:
           runOnce:
             deploy:
               steps:
+              - script: |
+                  echo "Listing files in the artifact directory"
+                  ls -R $(System.DefaultWorkingDirectory)
               - task: AzureResourceManagerTemplateDeployment@3
                 inputs:
                   azureResourceManagerConnection: '$(SubscriptionReference_Stg)'
@@ -98,6 +101,9 @@ stages:
           runOnce:
             deploy:
               steps:
+              - script: |
+                  echo "Listing files in the artifact directory"
+                  ls -R $(System.DefaultWorkingDirectory)
               - task: AzureResourceManagerTemplateDeployment@3
                 inputs:
                   azureResourceManagerConnection: '$(SubscriptionReference_Prod)'
