@@ -5,7 +5,7 @@ trigger:
      - main
   paths:
    include:
-    - infra/apim/*
+    - infra/bicep/apim/**
 # note - this path restriction is only valid while we are declaring the definition in this folder. 
 #      - if we reference the definition defined elsewhere this will not trigger on definition change.
 
