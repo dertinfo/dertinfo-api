@@ -64,7 +64,7 @@ stages:
               echo "Listing files in the artifact directory"
               ls -R $(System.DefaultWorkingDirectory)
 
-  - stage: Publish Artefact
+  - stage: PublishInfraAsArtefact
     jobs:
       - job: Publish_Artefact
         pool:
