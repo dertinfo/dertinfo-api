@@ -60,12 +60,13 @@ stages:
               echo RateLimitRenewalSecs_Prod: '$(RateLimitRenewalSecs_Prod)'
             displayName: 'Output build variables'
             
-  - stage: Test
+  - stage: DeployToTest
     displayName: Deploy to Test
     jobs:
       - job: Deploy_To_Test
         pool:
           vmImage: $(vmImageName)
+        environment: Live
         steps:
         - task: AzureResourceManagerTemplateDeployment@3
           inputs:
@@ -82,12 +83,14 @@ stages:
             overrideParameters: -apimInstanceName "$(ApimInstanceName_Stg)" -apiName "$(ApiName)" -apiDescription "$(ApiDescription)" -backendServiceUrl "$(BackendServiceUrl_Stg)" -apiPath "$(apiPath)" -rateLimitCalls "$(RateLimitCalls_Stg)" -rateLimitRenewalSecs "$(RateLimitRenewalSecs_Stg)"
 
 
-  - stage: Test
-    displayName: Deploy to Test
+  - stage: DeployToLive
+    displayName: Deploy to Live
+    dependsOn: Test
     jobs:
-      - job: Deploy_To_Test
+      - job: Deploy_To_Live
         pool:
           vmImage: $(vmImageName)
+        environment: Live
         steps:
         - task: AzureResourceManagerTemplateDeployment@3
           inputs:
