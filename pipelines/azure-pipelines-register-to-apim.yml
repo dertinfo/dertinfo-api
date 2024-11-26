@@ -75,6 +75,8 @@ stages:
           runOnce:
             deploy:
               steps:
+              - download: current
+                artifact: drop
               - script: |
                   echo "Listing files in the artifact directory"
                   ls -R $(System.DefaultWorkingDirectory)
@@ -105,6 +107,8 @@ stages:
           runOnce:
             deploy:
               steps:
+              - download: current
+                artifact: drop
               - script: |
                   echo "Listing files in the artifact directory"
                   ls -R $(System.DefaultWorkingDirectory)
