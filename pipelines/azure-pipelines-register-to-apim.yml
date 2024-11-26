@@ -1,0 +1,104 @@
+# Trigger the pipeline on pushes to the main branch
+trigger:
+  branches:
+   include:
+     - main
+  paths:
+   include:
+    - infra/apim/*
+# note - this path restriction is only valid while we are declaring the definition in this folder. 
+#      - if we reference the definition defined elsewhere this will not trigger on definition change.
+
+# Do not trigger the pipeline on pull requests
+pr:
+  branches:
+    exclude:
+      - '*'
+
+name: Register_API_To_APIM
+
+variables:
+  - group: DertInfoAPIMIntegration_VariablesGroup
+  - name: vmImageName
+    value: 'ubuntu-latest'
+  - name: location
+    value: 'uksouth'
+  - name: templateFile
+    value: '**/apim/main.bicep'
+  - name: csmParametersFile
+    value: '**/apim/main.parameters.json'
+
+stages:
+  - stage: Validate
+    jobs:
+      - job: Validate_Deployment
+        pool:
+          vmImage: $(vmImageName)
+        steps:
+          - script: |
+              echo Build.SourceBranch: '$(Build.SourceBranch)'
+              echo Build.Reason: '$(Build.Reason)'
+              echo Build.ArtifactStagingDirectory: '$(Build.ArtifactStagingDirectory)'
+              echo Build.BuildNumber: '$(Build.BuildNumber)'
+              echo SubscriptionReference_Stg:'$(SubscriptionReference_Stg)'
+              echo SubscriptionReference_Prod: '$(SubscriptionReference_Prod)'
+              echo ResourceGroupName_Stg: '$(ResourceGroupName_Stg)'
+              echo ResourceGroupName_Prod: '$(ResourceGroupName_Prod)'
+              echo location: '$(location)'
+              echo templateFile: '$(templateFile)'
+              echo csmParametersFile: '$(csmParametersFile)'
+              echo ApimInstanceName_Stg: '$(ApimInstanceName_Stg)'
+              echo ApimInstanceName_Prod: '$(ApimInstanceName_Prod)'
+              echo ApiName: '$(ApiName)'
+              echo ApiDescription: '$(ApiDescription)'
+              echo BackendServiceUrl_Stg: '$(BackendServiceUrl_Stg)'
+              echo BackendServiceUrl_Prod: '$(BackendServiceUrl_Prod)'
+              echo ApiPath: '$(ApiPath)'
+              echo RateLimitCalls_Stg: '$(RateLimitCalls_Stg)'
+              echo RateLimitCalls_Prod: '$(RateLimitCalls_Prod)'
+              echo RateLimitRenewalSecs_Stg: '$(RateLimitRenewalSecs_Stg)'
+              echo RateLimitRenewalSecs_Prod: '$(RateLimitRenewalSecs_Prod)'
+            displayName: 'Output build variables'
+            
+  - stage: Test
+    displayName: Deploy to Test
+    jobs:
+      - job: Deploy_To_Test
+        pool:
+          vmImage: $(vmImageName)
+        steps:
+        - task: AzureResourceManagerTemplateDeployment@3
+          inputs:
+            azureResourceManagerConnection: '$(SubscriptionReference_Stg)'
+            deploymentScope: 'Resource Group'
+            action: 'Create Or Update Resource Group'
+            resourceGroupName: '$(ResourceGroupName_Stg)'
+            location: '$(location)'
+            templateLocation: 'Linked artifact'
+            csmFile: '$(templateFile)'
+            csmParametersFile: '$(csmParametersFile)'
+            deploymentMode: 'Incremental'
+            deploymentName: 'Deploy-Integration-APIM' 
+            overrideParameters: -apimInstanceName "$(ApimInstanceName_Stg)" -apiName "$(ApiName)" -apiDescription "$(ApiDescription)" -backendServiceUrl "$(BackendServiceUrl_Stg)" -apiPath "$(apiPath)" -rateLimitCalls "$(RateLimitCalls_Stg)" -rateLimitRenewalSecs "$(RateLimitRenewalSecs_Stg)"
+
+
+  - stage: Test
+    displayName: Deploy to Test
+    jobs:
+      - job: Deploy_To_Test
+        pool:
+          vmImage: $(vmImageName)
+        steps:
+        - task: AzureResourceManagerTemplateDeployment@3
+          inputs:
+            azureResourceManagerConnection: '$(SubscriptionReference_Prod)'
+            deploymentScope: 'Resource Group'
+            action: 'Create Or Update Resource Group'
+            resourceGroupName: '$(ResourceGroupName_Prod)'
+            location: '$(location)'
+            templateLocation: 'Linked artifact'
+            csmFile: '$(templateFile)'
+            csmParametersFile: '$(csmParametersFile)'
+            deploymentMode: 'Incremental'
+            deploymentName: 'Deploy-Integration-APIM' 
+            overrideParameters: -apimInstanceName "$(ApimInstanceName_Prod)" -apiName "$(ApiName)" -apiDescription "$(ApiDescription)" -backendServiceUrl "$(BackendServiceUrl_Prod)" -apiPath "$(apiPath)" -rateLimitCalls "$(RateLimitCalls_Prod)" -rateLimitRenewalSecs "$(RateLimitRenewalSecs_Prod)"
