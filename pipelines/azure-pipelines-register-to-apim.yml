@@ -63,45 +63,51 @@ stages:
   - stage: DeployToTest
     displayName: Deploy to Test
     jobs:
-      - job: Deploy_To_Test
+      - deployment: Deploy_To_Test
         pool:
           vmImage: $(vmImageName)
-        environment: Live
-        steps:
-        - task: AzureResourceManagerTemplateDeployment@3
-          inputs:
-            azureResourceManagerConnection: '$(SubscriptionReference_Stg)'
-            deploymentScope: 'Resource Group'
-            action: 'Create Or Update Resource Group'
-            resourceGroupName: '$(ResourceGroupName_Stg)'
-            location: '$(location)'
-            templateLocation: 'Linked artifact'
-            csmFile: '$(templateFile)'
-            csmParametersFile: '$(csmParametersFile)'
-            deploymentMode: 'Incremental'
-            deploymentName: 'Deploy-Integration-APIM' 
-            overrideParameters: -apimInstanceName "$(ApimInstanceName_Stg)" -apiName "$(ApiName)" -apiDescription "$(ApiDescription)" -backendServiceUrl "$(BackendServiceUrl_Stg)" -apiPath "$(apiPath)" -rateLimitCalls "$(RateLimitCalls_Stg)" -rateLimitRenewalSecs "$(RateLimitRenewalSecs_Stg)"
+        environment: Test
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+              - task: AzureResourceManagerTemplateDeployment@3
+                inputs:
+                  azureResourceManagerConnection: '$(SubscriptionReference_Stg)'
+                  deploymentScope: 'Resource Group'
+                  action: 'Create Or Update Resource Group'
+                  resourceGroupName: '$(ResourceGroupName_Stg)'
+                  location: '$(location)'
+                  templateLocation: 'Linked artifact'
+                  csmFile: '$(templateFile)'
+                  csmParametersFile: '$(csmParametersFile)'
+                  deploymentMode: 'Incremental'
+                  deploymentName: 'Deploy-Integration-APIM' 
+                  overrideParameters: -apimInstanceName "$(ApimInstanceName_Stg)" -apiName "$(ApiName)" -apiDescription "$(ApiDescription)" -backendServiceUrl "$(BackendServiceUrl_Stg)" -apiPath "$(apiPath)" -rateLimitCalls "$(RateLimitCalls_Stg)" -rateLimitRenewalSecs "$(RateLimitRenewalSecs_Stg)"
 
 
   - stage: DeployToLive
     displayName: Deploy to Live
     dependsOn: Test
     jobs:
-      - job: Deploy_To_Live
+      - deployment: Deploy_To_Live
         pool:
           vmImage: $(vmImageName)
         environment: Live
-        steps:
-        - task: AzureResourceManagerTemplateDeployment@3
-          inputs:
-            azureResourceManagerConnection: '$(SubscriptionReference_Prod)'
-            deploymentScope: 'Resource Group'
-            action: 'Create Or Update Resource Group'
-            resourceGroupName: '$(ResourceGroupName_Prod)'
-            location: '$(location)'
-            templateLocation: 'Linked artifact'
-            csmFile: '$(templateFile)'
-            csmParametersFile: '$(csmParametersFile)'
-            deploymentMode: 'Incremental'
-            deploymentName: 'Deploy-Integration-APIM' 
-            overrideParameters: -apimInstanceName "$(ApimInstanceName_Prod)" -apiName "$(ApiName)" -apiDescription "$(ApiDescription)" -backendServiceUrl "$(BackendServiceUrl_Prod)" -apiPath "$(apiPath)" -rateLimitCalls "$(RateLimitCalls_Prod)" -rateLimitRenewalSecs "$(RateLimitRenewalSecs_Prod)"
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+              - task: AzureResourceManagerTemplateDeployment@3
+                inputs:
+                  azureResourceManagerConnection: '$(SubscriptionReference_Prod)'
+                  deploymentScope: 'Resource Group'
+                  action: 'Create Or Update Resource Group'
+                  resourceGroupName: '$(ResourceGroupName_Prod)'
+                  location: '$(location)'
+                  templateLocation: 'Linked artifact'
+                  csmFile: '$(templateFile)'
+                  csmParametersFile: '$(csmParametersFile)'
+                  deploymentMode: 'Incremental'
+                  deploymentName: 'Deploy-Integration-APIM' 
+                  overrideParameters: -apimInstanceName "$(ApimInstanceName_Prod)" -apiName "$(ApiName)" -apiDescription "$(ApiDescription)" -backendServiceUrl "$(BackendServiceUrl_Prod)" -apiPath "$(apiPath)" -rateLimitCalls "$(RateLimitCalls_Prod)" -rateLimitRenewalSecs "$(RateLimitRenewalSecs_Prod)"
