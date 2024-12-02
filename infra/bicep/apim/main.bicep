@@ -38,6 +38,7 @@ param rateLimitRenewalSecs int = 60
 // #####################################################
 
 var apiNameLower = toLower(apiName)
+var backendName = 'backend-${apiNameLower}'
 
 // #####################################################
 // References
@@ -81,7 +82,7 @@ resource policy 'Microsoft.ApiManagement/service/apis/policies@2023-09-01-previe
 }
 
 resource backend 'Microsoft.ApiManagement/service/backends@2023-09-01-preview' = {
-  name: substring('backend-${apiNameLower}',0,80) // APIM has a 80 character limit on backend names
+  name: backendName
   parent: apimInstance
   properties: {
     url: backendServiceUrl
