@@ -15,13 +15,13 @@
       "value": "https://localhost:44100"
     },
     "apiPath": {
-      "value": "/api"
+      "value": ""
     },
-    "rateLimitCalls": {
-      "value": 300
+    "backendAppServiceName": {
+      "value": "my-app-service-name"
     },
-    "rateLimitRenewalSecs": {
-      "value": 60
+    "backendAppServiceResourceGroup": {
+      "value": "my-app-service-resource-group"
     }
   }
 }

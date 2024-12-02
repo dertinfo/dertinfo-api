@@ -24,21 +24,24 @@ param apiDescription string
 @description('Backend Service Url')
 param backendServiceUrl string
 
-@description('Backend Service Url')
-param apiPath string = '/api'
+@description('API URL suffix')
+param apiPath string = ''
 
-@description('Rate limit calls')
-param rateLimitCalls int = 300
+@description('Backend Resource Name')
+param backendAppServiceName string
 
-@description('Rate limit renewal period in seconds')
-param rateLimitRenewalSecs int = 60
+@description('Backend Resource Name')
+param backendAppServiceResourceGroup string
 
 // #####################################################
 // Variables
 // #####################################################
 
+var resourceManagerUrl = environment().resourceManager
 var apiNameLower = toLower(apiName)
 var backendName = 'backend-${apiNameLower}'
+var appServiceUrl = 'https://${backendAppServiceName}.azurewebsites.net'
+var appServiceManagementUri = '${resourceManagerUrl}${appService.id}'
 
 // #####################################################
 // References
@@ -47,6 +50,11 @@ var backendName = 'backend-${apiNameLower}'
 // Get a reference to an existing APIM instance
 resource apimInstance 'Microsoft.ApiManagement/service@2023-09-01-preview' existing = {
   name: apimInstanceName
+}
+
+resource appService 'Microsoft.Web/sites@2024-04-01' existing = {
+  name: backendAppServiceName
+  scope: resourceGroup(backendAppServiceResourceGroup)
 }
 
 // #####################################################
@@ -85,10 +93,9 @@ resource backend 'Microsoft.ApiManagement/service/backends@2023-09-01-preview' =
   name: backendName
   parent: apimInstance
   properties: {
-    url: backendServiceUrl
+    url: appServiceUrl
     description: 'Backend for the ${apiName} API'
     protocol: 'http'
+    resourceId: appServiceManagementUri
   }
 }
-
-/* todo - deal with the subscription requirement by default*/
