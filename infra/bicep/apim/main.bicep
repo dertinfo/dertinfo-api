@@ -37,6 +37,8 @@ param rateLimitRenewalSecs int = 60
 // Variables
 // #####################################################
 
+var apiNameLower = toLower(apiName)
+
 // #####################################################
 // References
 // #####################################################
@@ -59,6 +61,7 @@ resource api 'Microsoft.ApiManagement/service/apis@2023-09-01-preview' = {
     description: apiDescription
     serviceUrl: backendServiceUrl
     path: apiPath
+    subscriptionRequired: false
     protocols: [
       'https'
     ]
@@ -73,6 +76,18 @@ resource policy 'Microsoft.ApiManagement/service/apis/policies@2023-09-01-previe
   parent: api
   properties: {
     format: 'xml'
-    value: '<policies> <inbound> <rate-limit calls="${rateLimitCalls}" renewal-period="${rateLimitRenewalSecs}" /> </inbound> <backend> <forward-request /> </backend> <outbound> </outbound> <on-error /></policies>'
+    value: loadTextContent('./policy.xml')
   }
 }
+
+resource backend 'Microsoft.ApiManagement/service/backends@2023-09-01-preview' = {
+  name: substring('backend-${apiNameLower}',0,80) // APIM has a 80 character limit on backend names
+  parent: apimInstance
+  properties: {
+    url: backendServiceUrl
+    description: 'Backend for the ${apiName} API'
+    protocol: 'https'
+  }
+}
+
+/* todo - deal with the subscription requirement by default*/
