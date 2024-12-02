@@ -87,7 +87,7 @@ resource backend 'Microsoft.ApiManagement/service/backends@2023-09-01-preview' =
   properties: {
     url: backendServiceUrl
     description: 'Backend for the ${apiName} API'
-    protocol: 'https'
+    protocol: 'http'
   }
 }
 
