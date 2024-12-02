@@ -34,7 +34,7 @@ stages:
 - stage: 'Run_Info'
   displayName: 'Run Information'
   jobs:
- - job: Run_Info
+  - job: Run_Info
     pool:
       vmImage: $(vmImageName)
     steps:
@@ -70,16 +70,16 @@ stages:
 
 - stage: PublishInfraAsArtefact
   displayName: 'Publish Infra Artefact'
-    jobs:
-      - job: Publish_Infra_Artefact
-        pool:
-          vmImage: $(vmImageName)
-        steps:
-          - task: PublishBuildArtifacts@1
-            inputs:
-              PathtoPublish: '$(System.DefaultWorkingDirectory)/infra'
-              ArtifactName: 'infra'
-              publishLocation: 'Container'
+  jobs:
+  - job: Publish_Infra_Artefact
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(System.DefaultWorkingDirectory)/infra'
+        ArtifactName: 'infra'
+        publishLocation: 'Container'
 
 - stage: BuildAndPublishAPIAsArtefact
   displayName: 'Build and Publish API Artefact'
@@ -179,7 +179,10 @@ stages:
 
 - stage: 'DeployToTest'
   displayName: 'Deploy To Test'
-  dependsOn: OutputInformation
+  dependsOn:
+  - PublishInfraAsArtefact
+  - BuildAndPublishAPIAsArtefact
+  - UnitTest
   jobs:
   - deployment: Deploy_Website_To_Test
     pool:
@@ -200,36 +203,36 @@ stages:
               package: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
               deploymentMethod: 'auto'
   - deployment: Deploy_ApimDefinition_To_Test
-      pool:
-        vmImage: $(vmImageName)
-      environment: Test
-      strategy:
-        runOnce:
-          deploy:
-            steps:
-            - download: current
-              artifact: infra
-            - script: |
-                echo "Listing files in the pipeline workspace"
-                ls -R $(Pipeline.Workspace)
-            - task: AzureResourceManagerTemplateDeployment@3
-              inputs:
-                azureResourceManagerConnection: '$(SubscriptionReference_Stg)'
-                deploymentScope: 'Resource Group'
-                action: 'Create Or Update Resource Group'
-                resourceGroupName: '$(ResourceGroupName_Stg)'
-                location: '$(location)'
-                templateLocation: 'Linked artifact'
-                csmFile: '$(Pipeline.Workspace)/infra/**/$(templateFile)'
-                csmParametersFile: '$(Pipeline.Workspace)/infra/**/$(csmParametersFile)'
-                deploymentMode: 'Incremental'
-                deploymentName: 'Deploy-Integration-APIM' 
-                overrideParameters: -apimInstanceName "$(ApimInstanceName_Stg)" -apiName "$(ApiName)" -apiDescription "$(ApiDescription)" -backendServiceUrl "$(BackendServiceUrl_Stg)" -apiPath "$(apiPath)" -rateLimitCalls "$(RateLimitCalls_Stg)" -rateLimitRenewalSecs "$(RateLimitRenewalSecs_Stg)"
+    pool:
+      vmImage: $(vmImageName)
+    environment: Test
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: infra
+          - script: |
+              echo "Listing files in the pipeline workspace"
+              ls -R $(Pipeline.Workspace)
+          - task: AzureResourceManagerTemplateDeployment@3
+            inputs:
+              azureResourceManagerConnection: '$(SubscriptionReference_Stg)'
+              deploymentScope: 'Resource Group'
+              action: 'Create Or Update Resource Group'
+              resourceGroupName: '$(ResourceGroupName_Stg)'
+              location: '$(location)'
+              templateLocation: 'Linked artifact'
+              csmFile: '$(Pipeline.Workspace)/infra/**/$(templateFile)'
+              csmParametersFile: '$(Pipeline.Workspace)/infra/**/$(csmParametersFile)'
+              deploymentMode: 'Incremental'
+              deploymentName: 'Deploy-Integration-APIM' 
+              overrideParameters: -apimInstanceName "$(ApimInstanceName_Stg)" -apiName "$(ApiName)" -apiDescription "$(ApiDescription)" -backendServiceUrl "$(BackendServiceUrl_Stg)" -apiPath "$(apiPath)" -rateLimitCalls "$(RateLimitCalls_Stg)" -rateLimitRenewalSecs "$(RateLimitRenewalSecs_Stg)"
 
-- stage: 'DeployToLive
+- stage: 'DeployToLive'
   displayName: 'Deploy To Live'
   dependsOn: 
-    - Deploy_To_Test
+    - DeployToTest
   jobs:
   - deployment: Deploy_Website_To_Live
     pool:
@@ -249,11 +252,11 @@ stages:
               appName: '$(ApiWebAppName_Prod)'
               package: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
               deploymentMethod: 'auto'
-   - deployment: Deploy_ApimDefinition_To_Live
-     pool:
-       vmImage: $(vmImageName)
-     environment: Live
-     strategy:
+  - deployment: Deploy_ApimDefinition_To_Live
+    pool:
+      vmImage: $(vmImageName)
+    environment: Live
+    strategy:
       runOnce:
         deploy:
           steps:
