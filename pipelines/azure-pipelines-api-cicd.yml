@@ -38,38 +38,38 @@ stages:
 - stage: 'Run_Info'
   displayName: 'Run Information'
   jobs:
-  - job: Run_Info
-        pool:
-          vmImage: $(vmImageName)
-        steps:
-          - script: |
-              echo System.DefaultWorkingDirectory: '$(System.DefaultWorkingDirectory)'
-              echo Build.SourceBranch: '$(Build.SourceBranch)'
-              echo Build.Reason: '$(Build.Reason)'
-              echo Build.ArtifactStagingDirectory: '$(Build.ArtifactStagingDirectory)'
-              echo Build.BuildNumber: '$(Build.BuildNumber)'
-              echo SubscriptionReference_Stg:'$(SubscriptionReference_Stg)'
-              echo SubscriptionReference_Prod: '$(SubscriptionReference_Prod)'
-              echo ResourceGroupName_Stg: '$(ResourceGroupName_Stg)'
-              echo ResourceGroupName_Prod: '$(ResourceGroupName_Prod)'
-              echo location: '$(location)'
-              echo templateFile: '$(templateFile)'
-              echo csmParametersFile: '$(csmParametersFile)'
-              echo ApimInstanceName_Stg: '$(ApimInstanceName_Stg)'
-              echo ApimInstanceName_Prod: '$(ApimInstanceName_Prod)'
-              echo ApiName: '$(ApiName)'
-              echo ApiDescription: '$(ApiDescription)'
-              echo BackendServiceUrl_Stg: '$(BackendServiceUrl_Stg)'
-              echo BackendServiceUrl_Prod: '$(BackendServiceUrl_Prod)'
-              echo ApiPath: '$(ApiPath)'
-              echo RateLimitCalls_Stg: '$(RateLimitCalls_Stg)'
-              echo RateLimitCalls_Prod: '$(RateLimitCalls_Prod)'
-              echo RateLimitRenewalSecs_Stg: '$(RateLimitRenewalSecs_Stg)'
-              echo RateLimitRenewalSecs_Prod: '$(RateLimitRenewalSecs_Prod)'
-            displayName: 'Output build variables'
-          - script: |
-              echo "Listing files in the artifact directory"
-              ls -R $(System.DefaultWorkingDirectory)
+ - job: Run_Info
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - script: |
+        echo System.DefaultWorkingDirectory: '$(System.DefaultWorkingDirectory)'
+        echo Build.SourceBranch: '$(Build.SourceBranch)'
+        echo Build.Reason: '$(Build.Reason)'
+        echo Build.ArtifactStagingDirectory: '$(Build.ArtifactStagingDirectory)'
+        echo Build.BuildNumber: '$(Build.BuildNumber)'
+        echo SubscriptionReference_Stg:'$(SubscriptionReference_Stg)'
+        echo SubscriptionReference_Prod: '$(SubscriptionReference_Prod)'
+        echo ResourceGroupName_Stg: '$(ResourceGroupName_Stg)'
+        echo ResourceGroupName_Prod: '$(ResourceGroupName_Prod)'
+        echo location: '$(location)'
+        echo templateFile: '$(templateFile)'
+        echo csmParametersFile: '$(csmParametersFile)'
+        echo ApimInstanceName_Stg: '$(ApimInstanceName_Stg)'
+        echo ApimInstanceName_Prod: '$(ApimInstanceName_Prod)'
+        echo ApiName: '$(ApiName)'
+        echo ApiDescription: '$(ApiDescription)'
+        echo BackendServiceUrl_Stg: '$(BackendServiceUrl_Stg)'
+        echo BackendServiceUrl_Prod: '$(BackendServiceUrl_Prod)'
+        echo ApiPath: '$(ApiPath)'
+        echo RateLimitCalls_Stg: '$(RateLimitCalls_Stg)'
+        echo RateLimitCalls_Prod: '$(RateLimitCalls_Prod)'
+        echo RateLimitRenewalSecs_Stg: '$(RateLimitRenewalSecs_Stg)'
+        echo RateLimitRenewalSecs_Prod: '$(RateLimitRenewalSecs_Prod)'
+      displayName: 'Output build variables'
+    - script: |
+        echo "Listing files in the artifact directory"
+        ls -R $(System.DefaultWorkingDirectory)
 
 
 - stage: PublishInfraAsArtefact
@@ -134,10 +134,6 @@ stages:
       vmImage: $(vmImageName)
       demands:
       - npm
-
-    variables:
-      dotnetSdkVersion: '8.x'
-
     steps:
     - task: UseDotNet@2
       displayName: 'Use .NET SDK $(dotnetSdkVersion)'
