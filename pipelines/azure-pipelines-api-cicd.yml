@@ -17,28 +17,91 @@ variables:
   buildConfiguration: 'Release'
   apiProjectLookupPath: '**/dertinfo-api.csproj'
 
+variables:
+  - group: PrimaryAPI_Deployment_VariablesGroup
+  - name: vmImageName
+    value: 'ubuntu-latest'
+  - name: location
+    value: 'uksouth'
+  - name: templateFile
+    value: '**/apim/main.bicep'
+  - name: csmParametersFile
+    value: '**/apim/main.parameters.json'
+  - name: buildConfiguration
+    value: 'Release'
+  - name: apiProjectLookupPath
+    value: '**/dertinfo-api.csproj'
+  - name: dotNetSdkVersion
+    value: '8.x'
+
 stages:
-- stage: 'Build'
-  displayName: 'Build and Publish API'
+- stage: 'Run_Info'
+  displayName: 'Run Information'
+  jobs:
+  - job: Run_Info
+        pool:
+          vmImage: $(vmImageName)
+        steps:
+          - script: |
+              echo System.DefaultWorkingDirectory: '$(System.DefaultWorkingDirectory)'
+              echo Build.SourceBranch: '$(Build.SourceBranch)'
+              echo Build.Reason: '$(Build.Reason)'
+              echo Build.ArtifactStagingDirectory: '$(Build.ArtifactStagingDirectory)'
+              echo Build.BuildNumber: '$(Build.BuildNumber)'
+              echo SubscriptionReference_Stg:'$(SubscriptionReference_Stg)'
+              echo SubscriptionReference_Prod: '$(SubscriptionReference_Prod)'
+              echo ResourceGroupName_Stg: '$(ResourceGroupName_Stg)'
+              echo ResourceGroupName_Prod: '$(ResourceGroupName_Prod)'
+              echo location: '$(location)'
+              echo templateFile: '$(templateFile)'
+              echo csmParametersFile: '$(csmParametersFile)'
+              echo ApimInstanceName_Stg: '$(ApimInstanceName_Stg)'
+              echo ApimInstanceName_Prod: '$(ApimInstanceName_Prod)'
+              echo ApiName: '$(ApiName)'
+              echo ApiDescription: '$(ApiDescription)'
+              echo BackendServiceUrl_Stg: '$(BackendServiceUrl_Stg)'
+              echo BackendServiceUrl_Prod: '$(BackendServiceUrl_Prod)'
+              echo ApiPath: '$(ApiPath)'
+              echo RateLimitCalls_Stg: '$(RateLimitCalls_Stg)'
+              echo RateLimitCalls_Prod: '$(RateLimitCalls_Prod)'
+              echo RateLimitRenewalSecs_Stg: '$(RateLimitRenewalSecs_Stg)'
+              echo RateLimitRenewalSecs_Prod: '$(RateLimitRenewalSecs_Prod)'
+            displayName: 'Output build variables'
+          - script: |
+              echo "Listing files in the artifact directory"
+              ls -R $(System.DefaultWorkingDirectory)
+
+
+- stage: PublishInfraAsArtefact
+  displayName: 'Publish Infra Artefact'
+    jobs:
+      - job: Publish_Infra_Artefact
+        pool:
+          vmImage: $(vmImageName)
+        steps:
+          - task: PublishBuildArtifacts@1
+            inputs:
+              PathtoPublish: '$(System.DefaultWorkingDirectory)/infra'
+              ArtifactName: 'infra'
+              publishLocation: 'Container'
+
+- stage: BuildAndPublishAPIAsArtefact
+  displayName: 'Build and Publish API Artefact'
   jobs:
   - job: 'Build'
     displayName: 'Build the API'
     pool:
-      vmImage: 'ubuntu-latest'
+      vmImage: $(vmImageName)
       demands:
       - npm
-
-    variables:
-      dotnetSdkVersion: '8.x'
-
     steps:
     - task: UseDotNet@2
-      displayName: 'Use .NET SDK $(dotnetSdkVersion)'
+      displayName: 'Set .NET SDK $(dotnetSdkVersion)'
       inputs:
         version: '$(dotnetSdkVersion)'
 
     - task: DotNetCoreCLI@2
-      displayName: 'Restore project dependencies'
+      displayName: 'Restore NuGet dependencies'
       inputs:
         command: 'restore'
         projects: '**/dertinfo-api.csproj'
@@ -68,7 +131,7 @@ stages:
   - job: 'UnitTest'
     displayName: 'Run the Unit Tests'
     pool:
-      vmImage: 'ubuntu-latest'
+      vmImage: $(vmImageName)
       demands:
       - npm
 
@@ -122,38 +185,14 @@ stages:
         codeCoverageTool: 'cobertura'
         summaryFileLocation: '$(Build.SourcesDirectory)/**/*.cobertura.xml'
 
-- stage: 'OutputInformation'
-  displayName: 'Validate The Build'
-  dependsOn: UnitTest
-  jobs:
-  - job: 'SourceBranch'
-    displayName: 'Identify Source Branch'
-    pool:
-      vmImage: 'ubuntu-latest'
-    steps:
-      - bash: echo The Build.SourceBranch is - $BUILD_SOURCEBRANCH
-        env:
-          BUILD_SOURCEBRANCH: $(Build.SourceBranch)
-      - bash: echo The Build.Reason is - $BUILD_REASON
-        env:
-          BUILD_REASON: $(Build.Reason)
-      - bash: echo The Build.ArtifactStagingDirectory is - $BUILD_ARTIFACTSTAGINGDIRECTORY
-        env:
-          BUILD_ARTIFACTSTAGINGDIRECTORY: $(Build.ArtifactStagingDirectory)
-      - bash: echo The Build.BuildNumber is - $BUILD_BUILDNUMBER
-        env:
-          BUILD_BUILDNUMBER: $(Build.BuildNumber)
-
 - stage: 'DeployToTest'
-  displayName: 'Deploy API to Test'
+  displayName: 'Deploy To Test'
   dependsOn: OutputInformation
   jobs:
-  - deployment: Deploy
+  - deployment: Deploy_Website_To_Test
     pool:
-      vmImage: 'ubuntu-latest'
+      vmImage: $(vmImageName)
     environment: Test
-    variables:
-    - group: CD_Pipeline
     strategy:
       runOnce:
         deploy:
@@ -165,20 +204,45 @@ stages:
             inputs:
               azureSubscription: '(JUL2024) Visual Studio Professional Subscription (9ee4f83c-a9a6-41a0-822d-13e18dc6c648)'
               appType: 'webApp'
-              appName: '$(TestEnvApiWebAppName)'
+              appName: '$(ApiWebAppName_Stg)'
               package: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
               deploymentMethod: 'auto'
+  - deployment: Deploy_ApimDefinition_To_Test
+      pool:
+        vmImage: $(vmImageName)
+      environment: Test
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - download: current
+              artifact: infra
+            - script: |
+                echo "Listing files in the pipeline workspace"
+                ls -R $(Pipeline.Workspace)
+            - task: AzureResourceManagerTemplateDeployment@3
+              inputs:
+                azureResourceManagerConnection: '$(SubscriptionReference_Stg)'
+                deploymentScope: 'Resource Group'
+                action: 'Create Or Update Resource Group'
+                resourceGroupName: '$(ResourceGroupName_Stg)'
+                location: '$(location)'
+                templateLocation: 'Linked artifact'
+                csmFile: '$(Pipeline.Workspace)/infra/**/$(templateFile)'
+                csmParametersFile: '$(Pipeline.Workspace)/infra/**/$(csmParametersFile)'
+                deploymentMode: 'Incremental'
+                deploymentName: 'Deploy-Integration-APIM' 
+                overrideParameters: -apimInstanceName "$(ApimInstanceName_Stg)" -apiName "$(ApiName)" -apiDescription "$(ApiDescription)" -backendServiceUrl "$(BackendServiceUrl_Stg)" -apiPath "$(apiPath)" -rateLimitCalls "$(RateLimitCalls_Stg)" -rateLimitRenewalSecs "$(RateLimitRenewalSecs_Stg)"
 
-- stage: 'DeployToLive'
-  displayName: 'Deploy API to Live'
-  dependsOn: DeployToTest
+- stage: 'DeployToLive
+  displayName: 'Deploy To Live'
+  dependsOn: 
+    - Deploy_To_Test
   jobs:
-  - deployment: Deploy
+  - deployment: Deploy_Website_To_Live
     pool:
-      vmImage: 'ubuntu-latest'
+      vmImage: $(vmImageName)
     environment: Live
-    variables:
-    - group: CD_Pipeline
     strategy:
       runOnce:
         deploy:
@@ -190,6 +254,51 @@ stages:
             inputs:
               azureSubscription: '(JUL2024) DertInfo Subscription (e9f1da4f-d34f-4e93-b7c9-75d375a60253)'
               appType: 'webApp'
-              appName: '$(LiveEnvApiWebAppName)'
+              appName: '$(ApiWebAppName_Prod)'
               package: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
               deploymentMethod: 'auto'
+   - deployment: Deploy_ApimDefinition_To_Live
+     pool:
+       vmImage: $(vmImageName)
+     environment: Live
+     strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: infra
+          - script: |
+              echo "Listing files in the artifact directory"
+              ls -R $(Pipeline.Workspace)
+          - task: AzureResourceManagerTemplateDeployment@3
+            inputs:
+              azureResourceManagerConnection: '$(SubscriptionReference_Prod)'
+              deploymentScope: 'Resource Group'
+              action: 'Create Or Update Resource Group'
+              resourceGroupName: '$(ResourceGroupName_Prod)'
+              location: '$(location)'
+              templateLocation: 'Linked artifact'
+              csmFile: '$(Pipeline.Workspace)/infra/**/$(templateFile)'
+              csmParametersFile: '$(Pipeline.Workspace)/infra/**/$(csmParametersFile)'
+              deploymentMode: 'Incremental'
+              deploymentName: 'Deploy-Integration-APIM' 
+              overrideParameters: -apimInstanceName "$(ApimInstanceName_Prod)" -apiName "$(ApiName)" -apiDescription "$(ApiDescription)" -backendServiceUrl "$(BackendServiceUrl_Prod)" -apiPath "$(apiPath)" -rateLimitCalls "$(RateLimitCalls_Prod)" -rateLimitRenewalSecs "$(RateLimitRenewalSecs_Prod)"
+
+- stage: BuildAndPushDockerImage
+  displayName: 'Build and Publish Docker Image'
+  dependsOn: DeployToLive
+  jobs:
+  - job: Build
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - task: Docker@2
+      inputs:
+        containerRegistry: 'Docker Hub Service Connection (dertinfo)'
+        repository: 'dertinfo/dertinfo-api'
+        command: 'buildAndPush'
+        Dockerfile: './src/dertinfo-api/Dockerfile'
+        buildContext: './src'
+        tags: |
+            latest
+            $(Build.BuildId)
