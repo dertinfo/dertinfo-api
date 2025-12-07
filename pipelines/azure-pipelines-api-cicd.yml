@@ -47,7 +47,7 @@ stages:
       displayName: 'Build the project - $(buildConfiguration)'
       inputs:
         command: 'build'
-        arguments: '--no-restore --configuration $(buildConfiguration)'
+        arguments: '--no-restore --runtime win-x86 --configuration $(buildConfiguration)'
         projects: '**/dertinfo-api.csproj'
 
     - task: DotNetCoreCLI@2
