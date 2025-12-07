@@ -24,7 +24,8 @@ stages:
   - job: 'Build'
     displayName: 'Build the API'
     pool:
-      vmImage: 'ubuntu-latest'
+      vmImage: 'windows-latest'
+      # We should look to build on ubuntu and then deploy to Linux App Service in future
       demands:
       - npm
 
@@ -48,6 +49,7 @@ stages:
       inputs:
         command: 'build'
         arguments: '--no-restore --runtime win-x86 --configuration $(buildConfiguration)'
+        # We should look to target linux-x64 in future if Free and Shared App Service Support it
         projects: '**/dertinfo-api.csproj'
 
     - task: DotNetCoreCLI@2
