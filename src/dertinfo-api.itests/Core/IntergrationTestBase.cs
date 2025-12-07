@@ -44,7 +44,7 @@ namespace DertInfo.Api.ITests.Core
                 .ConfigureWebHost(webHost =>
                 {
                     webHost.UseTestServer();
-                    webHost.UseStartup<DertInfo.Api.Startup>();
+                    // webHost.UseStartup<DertInfo.Api.Startup>(); // Removed as we cleaned up startup 2025/12/07 when trying to address OutOfProcess hosting issues.
                 });
 
             // Build and start the IHost
